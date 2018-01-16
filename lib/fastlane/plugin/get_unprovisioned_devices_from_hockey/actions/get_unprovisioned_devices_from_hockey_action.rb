@@ -7,9 +7,10 @@ module Fastlane
     class GetUnprovisionedDevicesFromHockeyAction < Action
       def self.run(params)
         bundle_id = params[:app_bundle_id]
+        title = params[:app_title]
         api_token = params[:api_token]
 
-        hockey_app_id = hockey_app_id_for_bundle_id(bundle_id, api_token)
+        hockey_app_id = hockey_app_id_for_bundle_id(bundle_id, title, api_token)
         if hockey_app_id.empty?
           UI.user_error! "Could not find an app in Hockey with bundle ID matching #{bundle_id}"
         end
@@ -34,7 +35,9 @@ module Fastlane
                                        env_name: 'FL_HOCKEY_API_TOKEN',
                                        description: 'API Token for Hockey'),
           FastlaneCore::ConfigItem.new(key: :app_bundle_id,
-                                       description: 'App bundle identifier to get unprovisioned devices for (example: com.company.AppName)')
+                                       description: 'App bundle identifier to get unprovisioned devices for (example: com.company.AppName)'),
+          FastlaneCore::ConfigItem.new(key: :app_title,
+                                       description: 'App title to get unprovisioned devices for (example: App Name)')
         ]
       end
 
@@ -56,7 +59,7 @@ module Fastlane
         http
       end
 
-      def self.hockey_app_id_for_bundle_id(bundle_id, api_token)
+      def self.hockey_app_id_for_bundle_id(bundle_id, title, api_token)
         http = http_for_hockey
 
         uri_apps = URI('https://rink.hockeyapp.net/api/2/apps')
@@ -72,7 +75,7 @@ module Fastlane
         apps_response = JSON.parse(response.body)
 
         apps_response['apps'].each do |app|
-          if app['bundle_identifier'] == bundle_id and app['platform'] == 'iOS'
+          if app['bundle_identifier'] == bundle_id and app['title'] == title and app['platform'] == 'iOS'
             app_public_id = app['public_identifier']
           end
         end
